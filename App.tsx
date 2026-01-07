@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Trophy, RefreshCw, ChevronRight, Edit2, Check, X, ShieldAlert, Download } from 'lucide-react';
+import { Trophy, RefreshCw, ChevronRight, Edit2, Check, X, ShieldAlert } from 'lucide-react';
 import { INITIAL_TEAMS, ROUNDS } from './constants';
 import { Team } from './types';
 import { soundManager } from './utils/sounds';
@@ -14,51 +14,8 @@ const App: React.FC = () => {
   const [isGameOver, setIsGameOver] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const currentRound = ROUNDS[currentRoundIndex];
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
-      // Stash the event so it can be triggered later.
-      setDeferredPrompt(e);
-    };
-
-    const handleAppInstalled = () => {
-      // Clear the deferredPrompt so it can be garbage collected
-      setDeferredPrompt(null);
-      console.log('PWA was installed successfully');
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    // If the app is already in standalone mode, we don't need to show the prompt
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setDeferredPrompt(null);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    
-    // Show the install prompt
-    deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to the install prompt: ${outcome}`);
-    
-    // We've used the prompt, and can't use it again, so clear it
-    setDeferredPrompt(null);
-  };
 
   const handleAddPoints = useCallback((teamId: number) => {
     if (isGameOver) return;
@@ -116,11 +73,13 @@ const App: React.FC = () => {
       const duration = 5 * 1000;
       const animationEnd = Date.now() + duration;
       const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
       const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
       const interval: any = setInterval(function() {
         const timeLeft = animationEnd - Date.now();
         if (timeLeft <= 0) return clearInterval(interval);
+
         const particleCount = 50 * (timeLeft / duration);
         confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
         confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
@@ -230,25 +189,13 @@ const App: React.FC = () => {
 
       {/* Footer Controls */}
       <footer className="w-full glass p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl border-b-4 border-slate-300">
-        <div className="flex items-center gap-6">
-          <button
-            onClick={resetGame}
-            className="flex items-center gap-2 px-6 py-3 text-slate-600 hover:text-red-600 font-bold transition-colors uppercase tracking-widest text-sm"
-          >
-            <RefreshCw size={18} />
-            Reset Game
-          </button>
-          
-          {deferredPrompt && (
-            <button
-              onClick={handleInstallClick}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg text-sm animate-bounce"
-            >
-              <Download size={18} />
-              Install App
-            </button>
-          )}
-        </div>
+        <button
+          onClick={resetGame}
+          className="flex items-center gap-2 px-6 py-3 text-slate-600 hover:text-red-600 font-bold transition-colors uppercase tracking-widest text-sm"
+        >
+          <RefreshCw size={18} />
+          Reset Game
+        </button>
 
         <div className="flex items-center gap-4">
           {isGameOver ? (
